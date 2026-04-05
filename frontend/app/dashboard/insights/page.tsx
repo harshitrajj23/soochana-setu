@@ -1,38 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Search, Users, RefreshCw, AlertCircle, CheckCircle2, UserCircle2 } from "lucide-react";
+import { getBeneficiaryInsights } from "@/lib/api";
 
 export default function InsightsPage() {
   const [scanning, setScanning] = useState(false);
   const [dataReady, setDataReady] = useState(false);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const startScan = () => {
+  const startScan = async () => {
     setScanning(true);
     setDataReady(false);
-    setTimeout(() => {
+    try {
+      const res = await getBeneficiaryInsights();
+      if (res.success && Array.isArray(res.data)) {
+        // Data is already sorted by confidence descending from the backend
+        setProfiles(res.data);
+        setDataReady(true);
+      }
+    } catch (err: any) {
+      console.error("INSIGHTS ERROR:", err.message);
+    } finally {
       setScanning(false);
-      setDataReady(true);
-    }, 2500);
+    }
   };
 
-  const PROFILES = [
-    { name: "Rajesh Kumar", address: "Sector 4, Rohini, Delhi", confidence: 98, status: "Verified" },
-    { name: "Anita Devi", address: "Kankarbagh, Patna, BR", confidence: 92, status: "Verified" },
-    { name: "Priya Patel", address: "Navrangpura, AMD", confidence: 96, status: "Verified" },
-    { name: "Amit Sharma", address: "Phase 1, Electronic City, BLR", confidence: 64, status: "Duplicate", badge: "yellow" },
-    { name: "Suresh Babu", address: "Main Road, Gandhi Nagar, CNH", confidence: 42, status: "Missing Data", badge: "red" },
-    { name: "Ramesh Singh", address: "Indira Nagar, LKO", confidence: 61, status: "Duplicate", badge: "yellow" },
-  ];
+  // Filter profiles based on search query
+  const filteredProfiles = profiles.filter(p => 
+    (p.full_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+    (p.id?.toLowerCase() || "").includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="w-full flex flex-col gap-8">
       
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between w-full">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight text-white">Beneficiary Insights</h1>
-          <p className="text-sm text-white/50">Detailed repository of unified profiles and their integrity markers.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white underline decoration-[#D4AF37]/30 underline-offset-8">Beneficiary Insights</h1>
+          <p className="text-sm text-white/50">Real-time repository of unified beneficiary profiles and integrity markers.</p>
         </div>
         
         {dataReady && (
@@ -40,7 +48,9 @@ export default function InsightsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
             <input 
               type="text" 
-              placeholder="Search UID or Name..." 
+              placeholder="Search by name or ID..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#0a0a0a] border border-[#D4AF37]/20 rounded-full pl-10 pr-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#D4AF37]/60 transition-colors"
             />
           </div>
@@ -65,14 +75,14 @@ export default function InsightsPage() {
               />
             </div>
             
-            <div className="text-center flex flex-col gap-2">
+            <div className="text-center flex flex-col gap-2 px-4">
               <h3 className="text-white/80 font-bold text-xl tracking-tight">Intelligence Repository Offline</h3>
-              <p className="text-white/30 text-sm max-w-md mx-auto">Trigger a deep system scan to cross-reference beneficiary hashes and populate visual insight markers.</p>
+              <p className="text-white/30 text-sm max-w-md mx-auto small text-balance">Access federal data nodes and aggregate unified beneficiary profiles into visual insight markers.</p>
             </div>
 
             <button 
               onClick={startScan}
-              className="px-10 py-3.5 rounded-full bg-[#D4AF37] text-black font-bold tracking-widest text-xs uppercase hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(212,175,55,0.3)] cursor-pointer"
+              className="px-10 py-3.5 rounded-full bg-[#D4AF37] text-black font-black tracking-widest text-xs uppercase hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(212,175,55,0.3)] cursor-pointer"
             >
               Initiate System Scan
             </button>
@@ -103,49 +113,66 @@ export default function InsightsPage() {
           <motion.div 
             key="results"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+            className="flex flex-col gap-6"
           >
-            {PROFILES.map((p, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-                className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 flex flex-col gap-6 shadow-sm hover:border-[#D4AF37]/30 transition-all duration-300 group"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-lg font-bold text-white group-hover:text-[#D4AF37] transition-colors">{p.name}</span>
-                    <div className="flex items-center gap-2 text-white/30 truncate">
-                      <Search size={10} />
-                      <span className="text-[10px] uppercase font-bold tracking-widest">{p.address}</span>
+            {filteredProfiles.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {filteredProfiles.map((p, i) => (
+                  <motion.div
+                    key={p.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: i * 0.05 }}
+                    className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 flex flex-col gap-6 shadow-sm hover:border-[#D4AF37]/30 transition-all duration-300 group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col gap-1.5 w-full">
+                        <div className="flex items-center gap-2">
+                          <UserCircle2 size={16} className="text-[#D4AF37]/40" />
+                          <span className="text-lg font-bold text-white group-hover:text-[#D4AF37] transition-colors truncate">{p.full_name || "Not Available"}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 ml-6">
+                           <span className="text-[10px] uppercase font-black text-white/20 tracking-widest">Location</span>
+                           <span className="text-white/40 text-[11px] font-medium truncate">{p.address || "Not Available"}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  {p.badge === 'yellow' ? (
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-yellow-500/5 text-yellow-500 border border-yellow-500/20">
-                      <AlertCircle size={10} />
-                      <span className="text-[9px] font-bold uppercase tracking-wider">Duplicate</span>
+
+                    <div className="flex flex-col gap-2 px-1">
+                       <div className="flex justify-between items-end">
+                         <span className="text-[9px] font-black tracking-widest text-white/20 uppercase">Internal Status</span>
+                         <span className={`text-[10px] font-bold tracking-widest uppercase ${p.verification_status === 'verified' ? 'text-emerald-500' : p.verification_status === 'rejected' ? 'text-red-500' : 'text-[#D4AF37]/60'}`}>
+                           {p.verification_status || "pending"}
+                         </span>
+                       </div>
                     </div>
-                  ) : p.badge === 'red' ? (
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-red-500/5 text-red-500 border border-red-500/20">
-                      <AlertCircle size={10} />
-                      <span className="text-[9px] font-bold uppercase tracking-wider">Missing Data</span>
+                    
+                    <div className="flex flex-col gap-2 pt-5 border-t border-white/5 mt-auto">
+                      <div className="flex justify-between items-center px-1">
+                        <span className="text-[9px] text-white/20 uppercase font-black tracking-widest">Confidence Score</span>
+                        <span className="text-sm font-black tabular-nums text-[#D4AF37]">{p.confidence_score || 0}%</span>
+                      </div>
+                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden shadow-inner">
+                        <motion.div 
+                           initial={{ width: 0 }}
+                           animate={{ width: `${p.confidence_score || 0}%` }}
+                           transition={{ duration: 1.2, delay: 0.3 + i * 0.05 }}
+                           className="h-full bg-gradient-to-r from-[#D4AF37]/50 to-[#D4AF37]"
+                        />
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/5 text-emerald-500 border border-emerald-500/20">
-                      <CheckCircle2 size={10} />
-                      <span className="text-[9px] font-bold uppercase tracking-wider">Verified</span>
-                    </div>
-                  )}
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-32 border border-dashed border-white/10 rounded-[2rem] gap-4">
+                <AlertCircle size={40} className="text-white/10" />
+                <div className="text-center">
+                  <h3 className="text-white/40 font-bold text-lg">No Results Found</h3>
+                  <p className="text-white/20 text-xs">Try adjusting your search criteria or running a new scan.</p>
                 </div>
-                
-                <div className="flex items-center justify-between pt-5 border-t border-white/5 mt-auto">
-                  <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Confidence Index</span>
-                  <span className={`text-sm font-black tracking-tight ${p.badge ? 'text-white/60' : 'text-[#D4AF37]'}`}>{p.confidence}%</span>
-                </div>
-              </motion.div>
-            ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

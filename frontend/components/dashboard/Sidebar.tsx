@@ -12,7 +12,7 @@ import {
   ActivitySquare, 
   KeyRound 
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MENU_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -25,11 +25,27 @@ const MENU_ITEMS = [
   { name: "Verification", href: "/dashboard/verification", icon: KeyRound },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-[280px] h-screen fixed left-0 top-0 border-r border-[#D4AF37]/10 bg-black/80 backdrop-blur-md z-40 flex flex-col pt-24 pb-8 px-4 font-sans">
+    <AnimatePresence>
+      {(isOpen || (typeof window !== 'undefined' && window.innerWidth >= 768)) && (
+        <motion.aside 
+          initial={{ x: "-100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "-100%" }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className={`
+            w-[280px] h-screen fixed left-0 top-0 border-r border-[#D4AF37]/10 bg-black/95 backdrop-blur-md z-50 flex flex-col pt-24 pb-8 px-4 font-sans
+            md:translate-x-0 md:bg-black/80 md:z-40
+          `}
+        >
       <nav className="flex-1 overflow-y-auto w-full flex flex-col gap-2 no-scrollbar">
         {MENU_ITEMS.map((item) => {
           const isActive = pathname === item.href;
@@ -39,6 +55,7 @@ export function Sidebar() {
             <Link 
               key={item.name} 
               href={item.href}
+              onClick={onClose}
               className="relative flex items-center w-full group py-3 px-4 rounded-lg transition-all duration-300 flex-shrink-0"
             >
               {/* Highlight background text */}
@@ -87,6 +104,8 @@ export function Sidebar() {
            </div>
         </div>
       </div>
-    </aside>
+        </motion.aside>
+      )}
+    </AnimatePresence>
   );
 }

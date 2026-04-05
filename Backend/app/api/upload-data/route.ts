@@ -1,52 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase';
-import { parse } from 'csv-parse/sync';
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const contentType = req.headers.get('content-type');
-    let dataToInsert: any[] = [];
-
-    if (contentType?.includes('application/json')) {
-      const body = await req.json();
-      dataToInsert = Array.isArray(body) ? body : [body];
-    } else if (contentType?.includes('text/csv')) {
-      const text = await req.text();
-      const records = parse(text, {
-        columns: true,
-        skip_empty_lines: true
-      });
-      dataToInsert = records;
-    } else {
-      return NextResponse.json({
-        success: false,
-        message: "Unsupported content type. Use application/json or text/csv."
-      }, { status: 400 });
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
+    
+    if (!file) {
+      return NextResponse.json({ message: "No file provided" }, { status: 400, headers: corsHeaders });
     }
 
-    const { data: inserted, error } = await supabaseAdmin
-      .from('beneficiaries')
-      .insert(dataToInsert.map(r => ({
-        full_name: r.full_name,
-        address: r.address,
-        id_number: r.id_number,
-        income: r.income,
-        scheme_name: r.scheme_name,
-        raw_data: r
-      })))
-      .select();
+    // STEP 3: Final Upload Code with Hardcoded CORRECT Bucket
+    const fileName = `files/${Date.now()}-${file.name}`;
 
-    if (error) throw error;
+    const { data, error } = await supabaseAdmin.storage
+      .from("beneficiery-docs")
+      .upload(fileName, file);
+
+    if (error) {
+      console.error("UPLOAD ERROR:", error.message);
+      return NextResponse.json({ message: error.message }, { status: 500, headers: corsHeaders });
+    }
 
     return NextResponse.json({
       success: true,
-      data: inserted,
-      message: `${inserted?.length} records uploaded successfully.`
-    });
-  } catch (error: any) {
-    return NextResponse.json({
-      success: false,
-      message: error.message || "An error occurred during data upload."
-    }, { status: 500 });
+      path: data.path,
+    }, { headers: corsHeaders });
+
+  } catch (err: any) {
+    console.error("UPLOAD EXCEPTION:", err.message);
+    return NextResponse.json({ message: "Upload failed" }, { status: 500, headers: corsHeaders });
   }
 }

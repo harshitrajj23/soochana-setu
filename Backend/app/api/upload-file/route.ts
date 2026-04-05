@@ -16,15 +16,15 @@ export async function POST(req: NextRequest) {
 
     const { data: uploadData, error: uploadError } = await supabaseAdmin
       .storage
-      .from('beneficiary-uploads')
-      .upload(`${beneficiaryId}/${file.name}`, file);
+      .from('beneficiery-docs')
+      .upload(`files/${Date.now()}-${file.name}`, file);
 
     if (uploadError) throw uploadError;
 
     // Get public URL (assuming public bucket)
     const { data: { publicUrl } } = supabaseAdmin
         .storage
-        .from('beneficiary-uploads')
+        .from('beneficiery-docs')
         .getPublicUrl(uploadData.path);
 
     const { data: inserted, error: dbError } = await supabaseAdmin

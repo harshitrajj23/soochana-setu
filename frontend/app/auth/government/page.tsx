@@ -3,14 +3,69 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { login, signup } from "@/lib/api";
 
 export default function GovernmentAuthPage() {
   const [authType, setAuthType] = useState<"signin" | "signup">("signin");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/dashboard");
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    console.log("LOGIN ATTEMPT:", { email, password });
+
+    try {
+      const res = await login({ email, password });
+      if (res.success && res.token) {
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("user", JSON.stringify(res.user));
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please check credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const governmentId = formData.get("governmentId") as string;
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log("SIGNUP ATTEMPT:", { name, email, governmentId });
+      const res = await signup({ name, email, governmentId, password });
+      if (res.success) {
+        setAuthType("signin");
+        setError("Account created successfully! Please sign in.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Signup failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,20 +132,27 @@ export default function GovernmentAuthPage() {
                 
                 <div className="flex flex-col gap-1.5 w-full relative">
                   <label className="text-[10px] md:text-[11px] font-semibold text-white/40 tracking-wider uppercase ml-1">Email</label>
-                  <input type="email" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1.5 text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="admin@gov.in" />
+                  <input name="email" type="email" required className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1.5 text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="admin@gov.in" />
                 </div>
                 
                 <div className="flex flex-col gap-1.5 w-full relative">
                   <label className="text-[10px] md:text-[11px] font-semibold text-white/40 tracking-wider uppercase ml-1">Password</label>
-                  <input type="password" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1.5 text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="••••••••" />
+                  <input name="password" type="password" required className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1.5 text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="••••••••" />
                 </div>
+
+                {error && (
+                  <div className="text-red-500 text-[10px] uppercase font-bold tracking-widest text-center mt-2">
+                    {error}
+                  </div>
+                )}
 
                 <button 
                   type="submit" 
-                  className="mt-4 rounded-full flex items-center justify-center w-full py-3 border border-[#c0a242] text-[#c0a242] bg-transparent transition-colors duration-300 ease-out hover:bg-[#c0a242] hover:text-black"
+                  disabled={loading}
+                  className="mt-4 rounded-full flex items-center justify-center w-full py-3 border border-[#c0a242] text-[#c0a242] bg-transparent transition-colors duration-300 ease-out hover:bg-[#c0a242] hover:text-black disabled:opacity-50"
                 >
                   <span className="text-[15px] font-medium tracking-wide">
-                    Login
+                    {loading ? "Authenticating..." : "Login"}
                   </span>
                 </button>
               </form>
@@ -98,41 +160,42 @@ export default function GovernmentAuthPage() {
 
             {/* PANEL 2: SIGN UP */}
             <div className="w-1/2 p-7 flex flex-col gap-5">
-              <form onSubmit={handleLogin} className="flex flex-col gap-4 w-full">
+              <form onSubmit={handleSignup} className="flex flex-col gap-4 w-full">
                 
                 <div className="flex flex-col gap-1 w-full relative">
                   <label className="text-[10px] md:text-[11px] font-semibold text-white/40 tracking-wider uppercase ml-1">Name</label>
-                  <input type="text" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="Officer Name" />
+                  <input name="name" type="text" required className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="Officer Name" />
                 </div>
                 
                 <div className="flex flex-col gap-1 w-full relative">
                   <label className="text-[10px] md:text-[11px] font-semibold text-white/40 tracking-wider uppercase ml-1">Email</label>
-                  <input type="email" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="email@gov.in" />
+                  <input name="email" type="email" required className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="email@gov.in" />
                 </div>
                 
                 <div className="flex flex-col gap-1 w-full relative">
                   <label className="text-[10px] md:text-[11px] font-semibold text-white/40 tracking-wider uppercase ml-1">
                     Government ID
                   </label>
-                  <input type="text" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="Enter ID" />
+                  <input name="governmentId" type="text" required className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="Enter ID" />
                 </div>
                 
                 <div className="flex flex-col gap-1 w-full relative">
                   <label className="text-[10px] md:text-[11px] font-semibold text-white/40 tracking-wider uppercase ml-1">Password</label>
-                  <input type="password" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="••••••••" />
+                  <input name="password" type="password" required className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="••••••••" />
                 </div>
-
+                
                 <div className="flex flex-col gap-1 w-full relative">
                   <label className="text-[10px] md:text-[11px] font-semibold text-white/40 tracking-wider uppercase ml-1">Confirm Password</label>
-                  <input type="password" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="••••••••" />
+                  <input name="confirmPassword" type="password" required className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="••••••••" />
                 </div>
 
                 <button 
                   type="submit" 
-                  className="mt-4 rounded-full flex items-center justify-center w-full py-3 border border-[#c0a242] text-[#c0a242] bg-transparent transition-colors duration-300 ease-out hover:bg-[#c0a242] hover:text-black"
+                  disabled={loading}
+                  className="mt-4 rounded-full flex items-center justify-center w-full py-3 border border-[#c0a242] text-[#c0a242] bg-transparent transition-colors duration-300 ease-out hover:bg-[#c0a242] hover:text-black disabled:opacity-50"
                 >
                   <span className="text-[15px] font-medium tracking-wide">
-                    Create Account
+                    {loading ? "Processing..." : "Create Account"}
                   </span>
                 </button>
 

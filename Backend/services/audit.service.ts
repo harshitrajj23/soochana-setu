@@ -23,4 +23,22 @@ export class AuditService {
       console.error(`Failed to log audit event ${eventType}:`, error.message);
     }
   }
+
+  /**
+   * Fetches the audit trail for a specific profile.
+   */
+  static async getLogs(profileId: string): Promise<any[]> {
+    const { data, error } = await supabaseAdmin
+      .from('audit_logs')
+      .select('*')
+      .eq('profile_id', profileId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error(`Failed to fetch logs for ${profileId}:`, error.message);
+      return [];
+    }
+
+    return data || [];
+  }
 }

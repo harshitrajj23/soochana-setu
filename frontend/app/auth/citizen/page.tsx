@@ -102,7 +102,7 @@ export default function CitizenAuthPage() {
                 
                 <div className="flex flex-col gap-1 w-full relative">
                   <label className="text-[10px] md:text-[11px] font-semibold text-white/40 tracking-wider uppercase ml-1">Name</label>
-                  <input type="text" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="John Doe" />
+                  <input type="text" className="w-full bg-transparent border-0 border-b border-white/20 px-1 py-1 text-[14px] md:text-[15px] text-white placeholder-white/20 focus:outline-none focus:ring-0 focus:border-[#c0a242] transition-colors duration-300" placeholder="Enter your name" />
                 </div>
                 
                 <div className="flex flex-col gap-1 w-full relative">

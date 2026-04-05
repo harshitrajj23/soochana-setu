@@ -3,30 +3,45 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadCloud, File, CheckCircle2 } from "lucide-react";
+import { uploadFile } from "@/lib/api";
 
 export default function UploadDataPage() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [complete, setComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const simulateUpload = () => {
+  const handleUpload = async (file: File) => {
     setUploading(true);
     setProgress(0);
     setComplete(false);
+    setError(null);
     
-    let current = 0;
-    const interval = setInterval(() => {
-      current += Math.random() * 15;
-      if (current >= 100) {
-        current = 100;
-        clearInterval(interval);
-        setTimeout(() => {
-          setComplete(true);
-          setUploading(false);
-        }, 500);
+    try {
+      // Sample beneficiary ID for demo purposes, 
+      // in a real scenario this might come from a selected citizen
+      const beneficiaryId = "demo-beneficiary-id";
+      
+      const res = await uploadFile(file, beneficiaryId);
+      
+      if (res.success) {
+        setComplete(true);
+        setUploading(false);
+      } else {
+        throw new Error(res.message || "Ingestion failed.");
       }
-      setProgress(current);
-    }, 200);
+    } catch (err: any) {
+      console.error("API ERROR:", err);
+      setError(err.message || "Failed to ingest records. Check backend node.");
+      setUploading(false);
+    }
+  };
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleUpload(file);
+    }
   };
 
   return (
@@ -54,12 +69,16 @@ export default function UploadDataPage() {
                 <span className="text-white font-medium text-lg">Click to upload or drag & drop</span>
                 <span className="text-white/40 text-sm">CSV, XML, JSON or encrypted SEC files (max. 5GB)</span>
               </div>
-              <button 
-                onClick={simulateUpload}
-                className="mt-4 px-8 py-2.5 rounded-full border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-colors font-medium text-sm"
-              >
-                Simulate Upload
-              </button>
+              <label className="mt-4 px-8 py-2.5 rounded-full border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-colors font-medium text-sm cursor-pointer disabled:opacity-50">
+                {uploading ? "Ingesting..." : "Select File for Ingestion"}
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  onChange={onFileChange}
+                  disabled={uploading}
+                />
+              </label>
+              {error && <p className="mt-4 text-red-500 text-xs font-bold uppercase">{error}</p>}
             </motion.div>
           ) : uploading ? (
             <motion.div 
@@ -92,7 +111,7 @@ export default function UploadDataPage() {
                  <CheckCircle2 size={48} strokeWidth={1.5} />
                </div>
                <span className="text-white font-medium text-xl">Ingestion Complete</span>
-               <span className="text-white/50 text-sm max-w-[280px]">1.2M records successfully staged for unification. Integrity hash verified.</span>
+               <span className="text-white/50 text-sm max-w-[280px]">Records successfully staged for unification. Integrity hash verified.</span>
                <button 
                 onClick={() => setComplete(false)}
                 className="mt-6 px-6 py-2 border border-white/20 rounded-full text-white/70 hover:bg-white/10 text-sm"
