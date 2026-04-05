@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CitizenService } from '../../../../services/citizen.service';
-
-import { InsightsService } from '../../../../services/insights.service';
+import { InsightsService } from '../../../services/insights.service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,21 +13,18 @@ export async function GET(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const dashboardData = await CitizenService.getDashboard(id_number);
-    const insightsData = await InsightsService.getCitizenInsights(id_number);
+    const insights = await InsightsService.getCitizenInsights(id_number);
 
     return NextResponse.json({
       success: true,
-      data: {
-        ...dashboardData,
-        cross_ministry_insights: insightsData
-      },
-      message: "Citizen dashboard data fetched successfully."
+      data: insights,
+      message: "Citizen insights generated successfully."
     });
   } catch (error: any) {
+    console.error(error);
     return NextResponse.json({
       success: false,
-      message: error.message || "An error occurred during dashboard fetch."
+      message: error.message || "An error occurred during insights generation."
     }, { status: 500 });
   }
 }
