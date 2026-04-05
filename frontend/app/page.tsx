@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 
@@ -105,11 +106,11 @@ export default function Home() {
             transition={{ duration: 1.2, delay: 7.0, ease: [0.16, 1, 0.3, 1] }}
             className="pt-12 flex justify-center w-full"
           >
-            <button className="group relative overflow-hidden rounded-full inline-flex items-center justify-center px-12 py-4 border border-[#D4AF37] text-[#D4AF37] bg-transparent transition-all duration-400 ease-out hover:bg-[#D4AF37] hover:text-black hover:scale-[1.05] hover:shadow-[0_0_30px_rgba(212,175,55,0.6)] cursor-pointer">
+            <Link href="/select-role" className="group relative overflow-hidden rounded-full inline-flex items-center justify-center px-12 py-4 border border-[#D4AF37] text-[#D4AF37] bg-transparent transition-all duration-400 ease-out hover:bg-[#D4AF37] hover:text-black hover:scale-[1.05] hover:shadow-[0_0_30px_rgba(212,175,55,0.6)] cursor-pointer">
               <span className="relative z-10 text-lg font-medium tracking-wide">
                 Get Started
               </span>
-            </button>
+            </Link>
           </motion.div>
 
         </div>
