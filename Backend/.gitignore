@@ -1,0 +1,16 @@
+# Node.js
+node_modules/
+.env.local
+*.log
+
+# Vercel / Next.js
+.next/
+out/
+.vercel/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Turbopack cache
+Backend/dev/cache/
